@@ -6,13 +6,15 @@ if [ -z "$ans" ]; then
 	exit -1
 fi
 
-for i in `cat semantic3D_files.csv`
+while IFS= read -r url
 do
-	output_file=`basename $i`
-	echo Downloading ${output_file} ...
-	wget $i
-	7z x ${output_file} -y
-done
+    url=${url/%$'\r'/}  # Remove trailing %0D
+    output_file=$(basename "$url")
+    echo "Downloading $output_file ..."
+    wget "$url"
+    7z x "$output_file" -y
+    rm "$output_file"  # Remove the 7z file
+done < semantic3D_files.csv
 
 mv station1_xyz_intensity_rgb.txt neugasse_station1_xyz_intensity_rgb.txt
 
