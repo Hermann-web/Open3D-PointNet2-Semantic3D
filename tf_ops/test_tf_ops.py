@@ -7,6 +7,7 @@ from tf_sampling import prob_sample, farthest_point_sample, gather_point
 
 
 class TestGrouping(tf.test.TestCase):
+
     def test(self):
         knn = True
         np.random.seed(100)
@@ -37,7 +38,8 @@ class TestGrouping(tf.test.TestCase):
 
     def test_grad(self):
         with tf.device("/gpu:0"):
-            points = tf.constant(np.random.random((1, 128, 16)).astype("float32"))
+            points = tf.constant(
+                np.random.random((1, 128, 16)).astype("float32"))
             print(points)
             xyz1 = tf.constant(np.random.random((1, 128, 3)).astype("float32"))
             xyz2 = tf.constant(np.random.random((1, 8, 3)).astype("float32"))
@@ -49,14 +51,15 @@ class TestGrouping(tf.test.TestCase):
 
         with self.test_session():
             print("---- Going to compute gradient error")
-            err = tf.test.compute_gradient_error(
-                points, (1, 128, 16), grouped_points, (1, 8, 32, 16)
-            )
+            err = tf.test.compute_gradient_error(points, (1, 128, 16),
+                                                 grouped_points,
+                                                 (1, 8, 32, 16))
             print(err)
             self.assertLess(err, 1e-4)
 
 
 class TestInterpolate(tf.test.TestCase):
+
     def test(self):
         np.random.seed(100)
         pts = np.random.random((32, 128, 64)).astype("float32")
@@ -79,7 +82,8 @@ class TestInterpolate(tf.test.TestCase):
 
     def test_grad(self):
         with self.test_session():
-            points = tf.constant(np.random.random((1, 8, 16)).astype("float32"))
+            points = tf.constant(
+                np.random.random((1, 8, 16)).astype("float32"))
             print(points)
             xyz1 = tf.constant(np.random.random((1, 128, 3)).astype("float32"))
             xyz2 = tf.constant(np.random.random((1, 8, 3)).astype("float32"))
@@ -87,14 +91,15 @@ class TestInterpolate(tf.test.TestCase):
             weight = tf.ones_like(dist) / 3.0
             interpolated_points = three_interpolate(points, idx, weight)
             print(interpolated_points)
-            err = tf.test.compute_gradient_error(
-                points, (1, 8, 16), interpolated_points, (1, 128, 16)
-            )
+            err = tf.test.compute_gradient_error(points, (1, 8, 16),
+                                                 interpolated_points,
+                                                 (1, 128, 16))
             print(err)
             self.assertLess(err, 1e-4)
 
 
 class TestSampling(tf.test.TestCase):
+
     def test(self):
         np.random.seed(100)
         triangles = np.random.rand(1, 5, 3, 3).astype("float32")
@@ -104,8 +109,7 @@ class TestSampling(tf.test.TestCase):
             trib = inp[:, :, 1, :]
             tric = inp[:, :, 2, :]
             areas = tf.sqrt(
-                tf.reduce_sum(tf.cross(trib - tria, tric - tria) ** 2, 2) + 1e-9
-            )
+                tf.reduce_sum(tf.cross(trib - tria, tric - tria)**2, 2) + 1e-9)
             randomnumbers = tf.random_uniform((1, 8192))
             triids = prob_sample(areas, randomnumbers)
             tria_sample = gather_point(tria, triids)
@@ -117,15 +121,12 @@ class TestSampling(tf.test.TestCase):
             uminusv = us - vs
             us = (uplusv + uminusv) * 0.5
             vs = (uplusv - uminusv) * 0.5
-            pt_sample = (
-                tria_sample
-                + (trib_sample - tria_sample) * tf.expand_dims(us, -1)
-                + (tric_sample - tria_sample) * tf.expand_dims(vs, -1)
-            )
+            pt_sample = (tria_sample +
+                         (trib_sample - tria_sample) * tf.expand_dims(us, -1) +
+                         (tric_sample - tria_sample) * tf.expand_dims(vs, -1))
             print("pt_sample: ", pt_sample)
             reduced_sample = gather_point(
-                pt_sample, farthest_point_sample(1024, pt_sample)
-            )
+                pt_sample, farthest_point_sample(1024, pt_sample))
             print(reduced_sample)
         with tf.Session("") as sess:
             ret = sess.run(reduced_sample)

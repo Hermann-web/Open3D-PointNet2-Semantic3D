@@ -5,7 +5,6 @@ from util.point_cloud_util import load_labels, colorize_point_cloud
 import numpy as np
 from util.provider import rotate_point_cloud, rotate_feature_point_cloud
 
-
 if __name__ == "__main__":
     # Parser
     parser = argparse.ArgumentParser()
@@ -26,7 +25,8 @@ if __name__ == "__main__":
     # Load labels and colorize pcd, if labels available
     if flags.labels_path != "":
         if not os.path.isfile(flags.pcd_path):
-            raise ValueError("labels path not found at {}".format(flags.labels_path))
+            raise ValueError("labels path not found at {}".format(
+                flags.labels_path))
         labels = load_labels(flags.labels_path)
         colorize_point_cloud(pcd, labels)
 

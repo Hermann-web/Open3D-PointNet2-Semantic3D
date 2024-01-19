@@ -6,8 +6,7 @@ import os
 BASE_DIR = os.path.dirname(__file__)
 sys.path.append(BASE_DIR)
 interpolate_module = tf.load_op_library(
-    os.path.join(BASE_DIR, "build", "libtf_interpolate.so")
-)
+    os.path.join(BASE_DIR, "build", "libtf_interpolate.so"))
 
 
 def three_nn(xyz1, xyz2):
@@ -25,7 +24,8 @@ def three_nn(xyz1, xyz2):
 ops.NoGradient("ThreeNN")
 
 
-def interpolate_label_with_color(sparse_points, sparse_labels, dense_points, knn):
+def interpolate_label_with_color(sparse_points, sparse_labels, dense_points,
+                                 knn):
     """
     Input:
         sparse_points: (num_sparse_points, 3) float32 array, points
@@ -40,8 +40,7 @@ def interpolate_label_with_color(sparse_points, sparse_labels, dense_points, knn
         dense_colors:  (num_dense_points, 3) uint8 array, colors for dense_labels
     """
     return interpolate_module.interpolate_label_with_color(
-        sparse_points, sparse_labels, dense_points, knn
-    )
+        sparse_points, sparse_labels, dense_points, knn)
 
 
 ops.NoGradient("InterpolateLabelWithColor")
@@ -65,7 +64,8 @@ def _three_interpolate_grad(op, grad_out):
     idx = op.inputs[1]
     weight = op.inputs[2]
     return [
-        interpolate_module.three_interpolate_grad(points, idx, weight, grad_out),
+        interpolate_module.three_interpolate_grad(points, idx, weight,
+                                                  grad_out),
         None,
         None,
     ]

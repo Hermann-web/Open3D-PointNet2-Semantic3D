@@ -6,9 +6,10 @@ import argparse
 if __name__ == "__main__":
     # Parser
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--kitti_root", default="", help="Checkpoint file", required=True
-    )
+    parser.add_argument("--kitti_root",
+                        default="",
+                        help="Checkpoint file",
+                        required=True)
     flags = parser.parse_args()
 
     basedir = flags.kitti_root

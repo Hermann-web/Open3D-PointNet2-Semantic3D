@@ -16,7 +16,9 @@ from dataset.semantic_dataset import SemanticDataset
 # Two global arg collections
 parser = argparse.ArgumentParser()
 parser.add_argument("--train_set", default="train", help="train, train_full")
-parser.add_argument("--config_file", default="semantic.json", help="config file path")
+parser.add_argument("--config_file",
+                    default="semantic.json",
+                    help="config file path")
 
 FLAGS = parser.parse_args()
 PARAMS = json.loads(open(FLAGS.config_file).read())
@@ -71,8 +73,7 @@ def update_progress(progress):
         progress = 1
     block = int(round(barLength * progress))
     text = "\rProgress: [{}] {}%".format(
-        "#" * block + "-" * (barLength - block), progress * 100
-    )
+        "#" * block + "-" * (barLength - block), progress * 100)
     sys.stdout.write(text)
     sys.stdout.flush()
 
@@ -94,7 +95,8 @@ def get_learning_rate(batch):
         PARAMS["learning_rate_decay_rate"],  # Decay rate.
         staircase=True,
     )
-    learning_rate = tf.maximum(learning_rate, 0.00001)  # CLIP THE LEARNING RATE!
+    learning_rate = tf.maximum(learning_rate,
+                               0.00001)  # CLIP THE LEARNING RATE!
     return learning_rate
 
 
@@ -122,18 +124,15 @@ def get_bn_decay(batch):
 def get_batch(split):
     np.random.seed()
     if split == "train":
-        return TRAIN_DATASET.sample_batch_in_all_files(
-            PARAMS["batch_size"], augment=True
-        )
+        return TRAIN_DATASET.sample_batch_in_all_files(PARAMS["batch_size"],
+                                                       augment=True)
     else:
         return VALIDATION_DATASET.sample_batch_in_all_files(
-            PARAMS["batch_size"], augment=False
-        )
+            PARAMS["batch_size"], augment=False)
 
 
-def fill_queues(
-    stack_train, stack_validation, num_train_batches, num_validation_batches
-):
+def fill_queues(stack_train, stack_validation, num_train_batches,
+                num_validation_batches):
     """
     Args:
         stack_train: mp.Queue to be filled asynchronously
@@ -149,10 +148,12 @@ def fill_queues(
     # Launch as much as n
     while True:
         if stack_train.qsize() + launched_train < num_train_batches:
-            results_train.append(pool.apply_async(get_batch, args=("train",)))
+            results_train.append(pool.apply_async(get_batch, args=("train", )))
             launched_train += 1
-        elif stack_validation.qsize() + launched_validation < num_validation_batches:
-            results_validation.append(pool.apply_async(get_batch, args=("validation",)))
+        elif stack_validation.qsize(
+        ) + launched_validation < num_validation_batches:
+            results_validation.append(
+                pool.apply_async(get_batch, args=("validation", )))
             launched_validation += 1
         for p in results_train:
             if p.ready():
@@ -179,8 +180,7 @@ def init_stacking():
         # Queues that contain several batches in advance
         num_train_batches = TRAIN_DATASET.get_num_batches(PARAMS["batch_size"])
         num_validation_batches = VALIDATION_DATASET.get_num_batches(
-            PARAMS["batch_size"]
-        )
+            PARAMS["batch_size"])
         stack_train = mp.Queue(num_train_batches)
         stack_validation = mp.Queue(num_validation_batches)
         stacker = mp.Process(
@@ -257,7 +257,8 @@ def train_one_epoch(sess, ops, train_writer, stack):
     iou_per_class = confusion_matrix.get_per_class_ious()
     iou_per_class = [0] + iou_per_class  # label 0 is ignored
     for i in range(1, NUM_CLASSES):
-        log_string("IoU of %s : %f" % (TRAIN_DATASET.labels_names[i], iou_per_class[i]))
+        log_string("IoU of %s : %f" %
+                   (TRAIN_DATASET.labels_names[i], iou_per_class[i]))
 
 
 def eval_one_epoch(sess, ops, validation_writer, stack):
@@ -300,8 +301,8 @@ def eval_one_epoch(sess, ops, validation_writer, stack):
             ops["is_training_pl"]: is_training,
         }
         summary, step, loss_val, pred_val = sess.run(
-            [ops["merged"], ops["step"], ops["loss"], ops["pred"]], feed_dict=feed_dict
-        )
+            [ops["merged"], ops["step"], ops["loss"], ops["pred"]],
+            feed_dict=feed_dict)
 
         validation_writer.add_summary(summary, step)
         pred_val = np.argmax(pred_val, 2)  # BxN
@@ -322,9 +323,8 @@ def eval_one_epoch(sess, ops, validation_writer, stack):
     log_string("Average IoU : %f" % (confusion_matrix.get_mean_iou()))
     iou_per_class = [0] + iou_per_class  # label 0 is ignored
     for i in range(1, NUM_CLASSES):
-        log_string(
-            "IoU of %s : %f" % (VALIDATION_DATASET.labels_names[i], iou_per_class[i])
-        )
+        log_string("IoU of %s : %f" %
+                   (VALIDATION_DATASET.labels_names[i], iou_per_class[i]))
 
     EPOCH_CNT += 5
     return confusion_matrix.get_accuracy()
@@ -338,8 +338,7 @@ def train():
 
         with tf.device("/gpu:" + str(PARAMS["gpu"])):
             pointclouds_pl, labels_pl, smpws_pl = model.get_placeholders(
-                PARAMS["num_point"], hyperparams=PARAMS
-            )
+                PARAMS["num_point"], hyperparams=PARAMS)
             is_training_pl = tf.placeholder(tf.bool, shape=())
 
             # Note the global_step=batch parameter to minimize.
@@ -364,15 +363,15 @@ def train():
             # Compute accuracy
             correct = tf.equal(tf.argmax(pred, 2), tf.to_int64(labels_pl))
             accuracy = tf.reduce_sum(tf.cast(correct, tf.float32)) / float(
-                PARAMS["batch_size"] * PARAMS["num_point"]
-            )
+                PARAMS["batch_size"] * PARAMS["num_point"])
             tf.summary.scalar("accuracy", accuracy)
 
             # Computer mean intersection over union
             mean_intersection_over_union, update_iou_op = tf.metrics.mean_iou(
-                tf.to_int32(labels_pl), tf.to_int32(tf.argmax(pred, 2)), NUM_CLASSES
-            )
-            tf.summary.scalar("mIoU", tf.to_float(mean_intersection_over_union))
+                tf.to_int32(labels_pl), tf.to_int32(tf.argmax(pred, 2)),
+                NUM_CLASSES)
+            tf.summary.scalar("mIoU",
+                              tf.to_float(mean_intersection_over_union))
 
             print("--- Get training operator")
             # Get training operator
@@ -380,8 +379,7 @@ def train():
             tf.summary.scalar("learning_rate", learning_rate)
             if PARAMS["optimizer"] == "momentum":
                 optimizer = tf.train.MomentumOptimizer(
-                    learning_rate, momentum=PARAMS["momentum"]
-                )
+                    learning_rate, momentum=PARAMS["momentum"])
             else:
                 assert PARAMS["optimizer"] == "adam"
                 optimizer = tf.train.AdamOptimizer(learning_rate)
@@ -400,11 +398,9 @@ def train():
         # Add summary writers
         merged = tf.summary.merge_all()
         train_writer = tf.summary.FileWriter(
-            os.path.join(PARAMS["logdir"], "train"), sess.graph
-        )
+            os.path.join(PARAMS["logdir"], "train"), sess.graph)
         validation_writer = tf.summary.FileWriter(
-            os.path.join(PARAMS["logdir"], "validation"), sess.graph
-        )
+            os.path.join(PARAMS["logdir"], "validation"), sess.graph)
 
         # Init variables
         sess.run(tf.global_variables_initializer())
@@ -438,15 +434,15 @@ def train():
 
             # Evaluate, save, and compute the accuracy
             if epoch % 5 == 0:
-                acc = eval_one_epoch(sess, ops, validation_writer, stack_validation)
+                acc = eval_one_epoch(sess, ops, validation_writer,
+                                     stack_validation)
 
             if acc > best_acc:
                 best_acc = acc
                 save_path = saver.save(
                     sess,
-                    os.path.join(
-                        PARAMS["logdir"], "best_model_epoch_%03d.ckpt" % (epoch)
-                    ),
+                    os.path.join(PARAMS["logdir"],
+                                 "best_model_epoch_%03d.ckpt" % (epoch)),
                 )
                 log_string("Model saved in file: %s" % save_path)
                 print("Model saved in file: %s" % save_path)
@@ -454,8 +450,7 @@ def train():
             # Save the variables to disk.
             if epoch % 10 == 0:
                 save_path = saver.save(
-                    sess, os.path.join(PARAMS["logdir"], "model.ckpt")
-                )
+                    sess, os.path.join(PARAMS["logdir"], "model.ckpt"))
                 log_string("Model saved in file: %s" % save_path)
                 print("Model saved in file: %s" % save_path)
 

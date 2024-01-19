@@ -6,6 +6,7 @@ import pykitti
 
 
 class KittiFileData(SemanticFileData):
+
     def __init__(self, points, box_size_x, box_size_y):
         self.box_size_x = box_size_x
         self.box_size_y = box_size_y
@@ -20,9 +21,8 @@ class KittiFileData(SemanticFileData):
         max_y = -min_y
         pcd = open3d.PointCloud()
         pcd.points = open3d.Vector3dVector(points)
-        region_pcd = open3d.crop_point_cloud(
-            pcd, [min_x, min_y, min_z], [max_x, max_y, max_z]
-        )
+        region_pcd = open3d.crop_point_cloud(pcd, [min_x, min_y, min_z],
+                                             [max_x, max_y, max_z])
         self.points = np.asarray(region_pcd.points)
 
         # Load label. In pure test set, fill with zeros.
@@ -42,9 +42,8 @@ class KittiFileData(SemanticFileData):
         # extract_mask = self._extract_z_box(np.array([0, 0, 0]))
         # points = self.points[extract_mask]
 
-        sample_mask = self._get_fix_sized_sample_mask(
-            self.points, num_points_per_sample
-        )
+        sample_mask = self._get_fix_sized_sample_mask(self.points,
+                                                      num_points_per_sample)
         points = self.points[sample_mask]
 
         centered_points = self._center_box(points)
@@ -55,9 +54,9 @@ class KittiFileData(SemanticFileData):
 
 
 class KittiDataset(SemanticDataset):
-    def __init__(
-        self, num_points_per_sample, base_dir, dates, drives, box_size_x, box_size_y
-    ):
+
+    def __init__(self, num_points_per_sample, base_dir, dates, drives,
+                 box_size_x, box_size_y):
         """Create a dataset holder
         num_points_per_sample (int): Defaults to 8192. The number of point per sample
         split (str): Defaults to 'train'. The selected part of the data (train, test,
@@ -95,12 +94,11 @@ class KittiDataset(SemanticDataset):
                     # Get points
                     points = points_with_intensity[:, :3]
                     # Init file data
-                    file_data = KittiFileData(
-                        points=points, box_size_x=box_size_x, box_size_y=box_size_y
-                    )
+                    file_data = KittiFileData(points=points,
+                                              box_size_x=box_size_x,
+                                              box_size_y=box_size_y)
                     # TODO: just for compatibility reason to include the name
                     file_data.file_path_without_ext = os.path.join(
-                        date, drive, "{:04d}".format(frame_idx)
-                    )
+                        date, drive, "{:04d}".format(frame_idx))
                     frame_idx += 1
                     self.list_file_data.append(file_data)

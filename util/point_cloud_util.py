@@ -14,23 +14,22 @@ def _label_to_colors(labels):
         7: [0, 0, 128],  # navy
         8: [128, 128, 0],  # olive
     }
-    return np.array([map_label_to_color[label] for label in labels]).astype(np.int32)
+    return np.array([map_label_to_color[label]
+                     for label in labels]).astype(np.int32)
 
 
 def _label_to_colors_one_hot(labels):
-    map_label_to_color = np.array(
-        [
-            [255, 255, 255],
-            [0, 0, 255],
-            [128, 0, 0],
-            [255, 0, 255],
-            [0, 128, 0],
-            [255, 0, 0],
-            [128, 0, 128],
-            [0, 0, 128],
-            [128, 128, 0],
-        ]
-    )
+    map_label_to_color = np.array([
+        [255, 255, 255],
+        [0, 0, 255],
+        [128, 0, 0],
+        [255, 0, 255],
+        [0, 128, 0],
+        [255, 0, 0],
+        [128, 0, 128],
+        [0, 0, 128],
+        [128, 128, 0],
+    ])
     num_labels = len(labels)
     labels_one_hot = np.zeros((num_labels, 9))
     labels_one_hot[np.arange(num_labels), labels] = 1

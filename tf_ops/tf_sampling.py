@@ -11,8 +11,7 @@ import os
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR)
 sampling_module = tf.load_op_library(
-    os.path.join(BASE_DIR, "build", "libtf_sampling.so")
-)
+    os.path.join(BASE_DIR, "build", "libtf_sampling.so"))
 
 
 def prob_sample(inp, inpr):

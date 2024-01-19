@@ -15,7 +15,13 @@ ROOT_DIR = os.path.abspath(os.path.pardir)
 sys.path.append(ROOT_DIR)
 
 
-def sample_and_group(npoint, radius, nsample, xyz, points, knn=False, use_xyz=True):
+def sample_and_group(npoint,
+                     radius,
+                     nsample,
+                     xyz,
+                     points,
+                     knn=False,
+                     use_xyz=True):
     """
     Input:
         npoint: int32
@@ -33,25 +39,22 @@ def sample_and_group(npoint, radius, nsample, xyz, points, knn=False, use_xyz=Tr
             (subtracted by seed point XYZ) in local regions
     """
 
-    new_xyz = gather_point(
-        xyz, farthest_point_sample(npoint, xyz)
-    )  # (batch_size, npoint, 3)
+    new_xyz = gather_point(xyz, farthest_point_sample(
+        npoint, xyz))  # (batch_size, npoint, 3)
     if knn:
         _, idx = knn_point(nsample, xyz, new_xyz)
     else:
         idx, pts_cnt = query_ball_point(radius, nsample, xyz, new_xyz)
     grouped_xyz = group_point(xyz, idx)  # (batch_size, npoint, nsample, 3)
-    grouped_xyz -= tf.tile(
-        tf.expand_dims(new_xyz, 2), [1, 1, nsample, 1]
-    )  # translation normalization
+    grouped_xyz -= tf.tile(tf.expand_dims(new_xyz, 2),
+                           [1, 1, nsample, 1])  # translation normalization
     if points is not None:
         grouped_points = group_point(
-            points, idx
-        )  # (batch_size, npoint, nsample, channel)
+            points, idx)  # (batch_size, npoint, nsample, channel)
         if use_xyz:
             new_points = tf.concat(
-                [grouped_xyz, grouped_points], axis=-1
-            )  # (batch_size, npoint, nample, 3+channel)
+                [grouped_xyz, grouped_points],
+                axis=-1)  # (batch_size, npoint, nample, 3+channel)
         else:
             new_points = grouped_points
     else:
@@ -79,14 +82,15 @@ def sample_and_group_all(xyz, points, use_xyz=True):
         dtype=tf.float32,
     )  # (batch_size, 1, 3)
     idx = tf.constant(
-        np.tile(np.array(range(nsample)).reshape((1, 1, nsample)), (batch_size, 1, 1))
-    )
+        np.tile(
+            np.array(range(nsample)).reshape((1, 1, nsample)),
+            (batch_size, 1, 1)))
     grouped_xyz = tf.reshape(
-        xyz, (batch_size, 1, nsample, 3)
-    )  # (batch_size, npoint=1, nsample, 3)
+        xyz, (batch_size, 1, nsample, 3))  # (batch_size, npoint=1, nsample, 3)
     if points is not None:
         if use_xyz:
-            new_points = tf.concat([xyz, points], axis=2)  # (batch_size, 16, 259)
+            new_points = tf.concat([xyz, points],
+                                   axis=2)  # (batch_size, 16, 259)
         else:
             new_points = points
         new_points = tf.expand_dims(new_points, 1)  # (batch_size, 1, 16, 259)
@@ -137,12 +141,10 @@ def pointnet_sa_module(
         if group_all:
             nsample = xyz.get_shape()[1].value
             new_xyz, new_points, idx, grouped_xyz = sample_and_group_all(
-                xyz, points, use_xyz
-            )
+                xyz, points, use_xyz)
         else:
             new_xyz, new_points, idx, grouped_xyz = sample_and_group(
-                npoint, radius, nsample, xyz, points, knn, use_xyz
-            )
+                npoint, radius, nsample, xyz, points, knn, use_xyz)
 
         # Point Feature Embedding
         if use_nchw:
@@ -165,29 +167,33 @@ def pointnet_sa_module(
 
         # Pooling in Local Regions
         if pooling == "max":
-            new_points = tf.reduce_max(
-                new_points, axis=[2], keepdims=True, name="maxpool"
-            )
+            new_points = tf.reduce_max(new_points,
+                                       axis=[2],
+                                       keepdims=True,
+                                       name="maxpool")
         elif pooling == "avg":
-            new_points = tf.reduce_mean(
-                new_points, axis=[2], keepdims=True, name="avgpool"
-            )
+            new_points = tf.reduce_mean(new_points,
+                                        axis=[2],
+                                        keepdims=True,
+                                        name="avgpool")
         elif pooling == "weighted_avg":
             with tf.variable_scope("weighted_avg"):
                 dists = tf.norm(grouped_xyz, axis=-1, ord=2, keepdims=True)
                 exp_dists = tf.exp(-dists * 5)
                 weights = exp_dists / tf.reduce_sum(
-                    exp_dists, axis=2, keepdims=True
-                )  # (batch_size, npoint, nsample, 1)
+                    exp_dists, axis=2,
+                    keepdims=True)  # (batch_size, npoint, nsample, 1)
                 new_points *= weights  # (batch_size, npoint, nsample, mlp[-1])
                 new_points = tf.reduce_sum(new_points, axis=2, keepdims=True)
         elif pooling == "max_and_avg":
-            max_points = tf.reduce_max(
-                new_points, axis=[2], keepdims=True, name="maxpool"
-            )
-            avg_points = tf.reduce_mean(
-                new_points, axis=[2], keepdims=True, name="avgpool"
-            )
+            max_points = tf.reduce_max(new_points,
+                                       axis=[2],
+                                       keepdims=True,
+                                       name="maxpool")
+            avg_points = tf.reduce_mean(new_points,
+                                        axis=[2],
+                                        keepdims=True,
+                                        name="avgpool")
             new_points = tf.concat([avg_points, max_points], axis=-1)
 
         # [Optional] Further Processing
@@ -211,8 +217,7 @@ def pointnet_sa_module(
                 new_points = tf.transpose(new_points, [0, 2, 3, 1])
 
         new_points = tf.squeeze(
-            new_points, [2]
-        )  # (batch_size, num_points_per_sample, mlp2[-1])
+            new_points, [2])  # (batch_size, num_points_per_sample, mlp2[-1])
         return new_xyz, new_points, idx
 
 
@@ -253,11 +258,13 @@ def pointnet_sa_module_msg(
             nsample = nsample_list[i]
             idx, pts_cnt = query_ball_point(radius, nsample, xyz, new_xyz)
             grouped_xyz = group_point(xyz, idx)
-            grouped_xyz -= tf.tile(tf.expand_dims(new_xyz, 2), [1, 1, nsample, 1])
+            grouped_xyz -= tf.tile(tf.expand_dims(new_xyz, 2),
+                                   [1, 1, nsample, 1])
             if points is not None:
                 grouped_points = group_point(points, idx)
                 if use_xyz:
-                    grouped_points = tf.concat([grouped_points, grouped_xyz], axis=-1)
+                    grouped_points = tf.concat([grouped_points, grouped_xyz],
+                                               axis=-1)
             else:
                 grouped_points = grouped_xyz
             if use_nchw:
@@ -282,9 +289,15 @@ def pointnet_sa_module_msg(
         return new_xyz, new_points_concat
 
 
-def pointnet_fp_module(
-    xyz1, xyz2, points1, points2, mlp, is_training, bn_decay, scope, bn=True
-):
+def pointnet_fp_module(xyz1,
+                       xyz2,
+                       points1,
+                       points2,
+                       mlp,
+                       is_training,
+                       bn_decay,
+                       scope,
+                       bn=True):
     """ PointNet Feature Propogation (FP) Module
         Input:
             xyz1: (batch_size, ndataset1, 3) TF tensor
@@ -305,8 +318,8 @@ def pointnet_fp_module(
 
         if points1 is not None:
             new_points1 = tf.concat(
-                axis=2, values=[interpolated_points, points1]
-            )  # B,ndataset1,nchannel1+nchannel2
+                axis=2, values=[interpolated_points,
+                                points1])  # B,ndataset1,nchannel1+nchannel2
         else:
             new_points1 = interpolated_points
         new_points1 = tf.expand_dims(new_points1, 2)

@@ -45,5 +45,6 @@ if __name__ == "__main__":
         # Colorize by predicted labels
         input_labels_path = os.path.join(pd_dir, file_prefix + ".labels")
         if os.path.isfile(input_labels_path):
-            output_pcd_path = os.path.join(colorized_pd_dir, file_prefix + ".pcd")
+            output_pcd_path = os.path.join(colorized_pd_dir,
+                                           file_prefix + ".pcd")
             colorize(input_pcd_path, input_labels_path, output_pcd_path)

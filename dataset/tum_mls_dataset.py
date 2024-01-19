@@ -15,7 +15,6 @@ validation_file_prefixes = [
 
 test_file_prefixes = [
     "mls2016_8class_20cm_ascii_area3b",
-
 ]
 
 all_file_prefixes = train_file_prefixes + validation_file_prefixes + test_file_prefixes
@@ -28,10 +27,11 @@ map_name_to_file_prefixes = {
     "all": all_file_prefixes,
 }
 
+
 class TUMMLSFileData:
-    def __init__(
-        self, file_path_without_ext, has_label, use_color, box_size_x, box_size_y
-    ):
+
+    def __init__(self, file_path_without_ext, has_label, use_color, box_size_x,
+                 box_size_y):
         """
         Loads file data
         """
@@ -69,14 +69,16 @@ class TUMMLSFileData:
         # Shuffling or up-sampling if needed
         if len(points) - num_points_per_sample > 0:
             true_array = np.ones(num_points_per_sample, dtype=bool)
-            false_array = np.zeros(len(points) - num_points_per_sample, dtype=bool)
+            false_array = np.zeros(len(points) - num_points_per_sample,
+                                   dtype=bool)
             sample_mask = np.concatenate((true_array, false_array), axis=0)
             np.random.shuffle(sample_mask)
         else:
             # Not enough points, recopy the data until there are enough points
             sample_mask = np.arange(len(points))
             while len(sample_mask) < num_points_per_sample:
-                sample_mask = np.concatenate((sample_mask, sample_mask), axis=0)
+                sample_mask = np.concatenate((sample_mask, sample_mask),
+                                             axis=0)
             sample_mask = sample_mask[:num_points_per_sample]
         return sample_mask
 
@@ -84,13 +86,11 @@ class TUMMLSFileData:
         # Shift the box so that z = 0 is the min and x = 0 and y = 0 is the box center
         # E.g. if box_size_x == box_size_y == 10, then the new mins are (-5, -5, 0)
         box_min = np.min(points, axis=0)
-        shift = np.array(
-            [
-                box_min[0] + self.box_size_x / 2,
-                box_min[1] + self.box_size_y / 2,
-                box_min[2],
-            ]
-        )
+        shift = np.array([
+            box_min[0] + self.box_size_x / 2,
+            box_min[1] + self.box_size_y / 2,
+            box_min[2],
+        ])
         points_centered = points - shift
         return points_centered
 
@@ -104,7 +104,8 @@ class TUMMLSFileData:
             scene_idx: scene index to get the min and max of the whole scene
         """
         # TODO TAKES LOT OF TIME !! THINK OF AN ALTERNATIVE !
-        scene_z_size = np.max(self.points, axis=0)[2] - np.min(self.points, axis=0)[2]
+        scene_z_size = np.max(self.points, axis=0)[2] - np.min(self.points,
+                                                               axis=0)[2]
         box_min = center_point - [
             self.box_size_x / 2,
             self.box_size_y / 2,
@@ -118,21 +119,16 @@ class TUMMLSFileData:
 
         i_min = np.searchsorted(self.points[:, 0], box_min[0])
         i_max = np.searchsorted(self.points[:, 0], box_max[0])
-        mask = (
-            np.sum(
-                (self.points[i_min:i_max, :] >= box_min)
-                * (self.points[i_min:i_max, :] <= box_max),
-                axis=1,
-            )
-            == 3
-        )
-        mask = np.hstack(
-            (
-                np.zeros(i_min, dtype=bool),
-                mask,
-                np.zeros(len(self.points) - i_max, dtype=bool),
-            )
-        )
+        mask = (np.sum(
+            (self.points[i_min:i_max, :] >= box_min) *
+            (self.points[i_min:i_max, :] <= box_max),
+            axis=1,
+        ) == 3)
+        mask = np.hstack((
+            np.zeros(i_min, dtype=bool),
+            mask,
+            np.zeros(len(self.points) - i_max, dtype=bool),
+        ))
 
         # mask = np.sum((points>=box_min)*(points<=box_max),axis=1) == 3
         assert np.sum(mask) != 0
@@ -148,7 +144,8 @@ class TUMMLSFileData:
         labels = self.labels[scene_extract_mask]
         colors = self.colors[scene_extract_mask]
 
-        sample_mask = self._get_fix_sized_sample_mask(points, num_points_per_sample)
+        sample_mask = self._get_fix_sized_sample_mask(points,
+                                                      num_points_per_sample)
         points = points[sample_mask]
         labels = labels[sample_mask]
         colors = colors[sample_mask]
@@ -170,8 +167,7 @@ class TUMMLSFileData:
 
         for _ in range(batch_size):
             points_centered, points_raw, gt_labels, colors = self.sample(
-                num_points_per_sample
-            )
+                num_points_per_sample)
             batch_points_centered.append(points_centered)
             batch_points_raw.append(points_raw)
             batch_labels.append(gt_labels)
@@ -186,9 +182,9 @@ class TUMMLSFileData:
 
 
 class TUMMLSDataset:
-    def __init__(
-        self, num_points_per_sample, split, use_color, box_size_x, box_size_y, path
-    ):
+
+    def __init__(self, num_points_per_sample, split, use_color, box_size_x,
+                 box_size_y, path):
         """Create a dataset holder
         num_points_per_sample (int): Defaults to 8192. The number of point per sample
         split (str): Defaults to 'train'. The selected part of the data (train, test,
@@ -239,7 +235,8 @@ class TUMMLSDataset:
         # Pre-compute the probability of picking a scene
         self.num_scenes = len(self.list_file_data)
         self.scene_probas = [
-            len(fd.points) / self.get_total_num_points() for fd in self.list_file_data
+            len(fd.points) / self.get_total_num_points()
+            for fd in self.list_file_data
         ]
 
         # Pre-compute the points weights if it is a training set
@@ -264,7 +261,8 @@ class TUMMLSDataset:
         batch_weights = []
 
         for _ in range(batch_size):
-            points, labels, colors, weights = self.sample_in_all_files(is_training=True)
+            points, labels, colors, weights = self.sample_in_all_files(
+                is_training=True)
             if self.use_color:
                 batch_data.append(np.hstack((points, colors)))
             else:
@@ -289,14 +287,13 @@ class TUMMLSDataset:
         Returns points and other info within a z - cropped box.
         """
         # Pick a scene, scenes with more points are more likely to be chosen
-        scene_index = np.random.choice(
-            np.arange(0, len(self.list_file_data)), p=self.scene_probas
-        )
+        scene_index = np.random.choice(np.arange(0, len(self.list_file_data)),
+                                       p=self.scene_probas)
 
         # Sample from the selected scene
         points_centered, points_raw, labels, colors = self.list_file_data[
-            scene_index
-        ].sample(num_points_per_sample=self.num_points_per_sample)
+            scene_index].sample(
+                num_points_per_sample=self.num_points_per_sample)
 
         if is_training:
             weights = self.label_weights[labels]
@@ -309,9 +306,11 @@ class TUMMLSDataset:
         return np.sum(list_num_points)
 
     def get_num_batches(self, batch_size):
-        return int(
-            self.get_total_num_points() / (batch_size * self.num_points_per_sample)
-        )
+        return int(self.get_total_num_points() /
+                   (batch_size * self.num_points_per_sample))
 
     def get_file_paths_without_ext(self):
-        return [file_data.file_path_without_ext for file_data in self.list_file_data]
+        return [
+            file_data.file_path_without_ext
+            for file_data in self.list_file_data
+        ]

@@ -8,9 +8,9 @@ from dataset.semantic_dataset import all_file_prefixes
 
 
 def wc(file_name):
-    out = subprocess.Popen(
-        ["wc", "-l", file_name], stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-    ).communicate()[0]
+    out = subprocess.Popen(["wc", "-l", file_name],
+                           stdout=subprocess.PIPE,
+                           stderr=subprocess.STDOUT).communicate()[0]
     return int(out.partition(b" ")[0])
 
 

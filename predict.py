@@ -13,20 +13,21 @@ from tf_ops.tf_interpolate import interpolate_label_with_color
 
 
 class Predictor:
+
     def __init__(self, checkpoint_path, num_classes, hyper_params):
         # Get ops from graph
         with tf.device("/gpu:0"):
             # Placeholder
-            pl_points, _, _ = model.get_placeholders(
-                hyper_params["num_point"], hyperparams=hyper_params
-            )
+            pl_points, _, _ = model.get_placeholders(hyper_params["num_point"],
+                                                     hyperparams=hyper_params)
             pl_is_training = tf.placeholder(tf.bool, shape=())
             print("pl_points shape", tf.shape(pl_points))
 
             # Prediction
-            pred, _ = model.get_model(
-                pl_points, pl_is_training, num_classes, hyperparams=hyper_params
-            )
+            pred, _ = model.get_model(pl_points,
+                                      pl_is_training,
+                                      num_classes,
+                                      hyperparams=hyper_params)
 
             # Saver
             saver = tf.train.Saver()
@@ -34,12 +35,11 @@ class Predictor:
             # Graph for interpolating labels
             # Assuming batch_size == 1 for simplicity
             pl_sparse_points = tf.placeholder(tf.float32, (None, 3))
-            pl_sparse_labels = tf.placeholder(tf.int32, (None,))
+            pl_sparse_labels = tf.placeholder(tf.int32, (None, ))
             pl_dense_points = tf.placeholder(tf.float32, (None, 3))
             pl_knn = tf.placeholder(tf.int32, ())
             dense_labels, dense_colors = interpolate_label_with_color(
-                pl_sparse_points, pl_sparse_labels, pl_dense_points, pl_knn
-            )
+                pl_sparse_points, pl_sparse_labels, pl_dense_points, pl_knn)
 
         self.ops = {
             "pl_points": pl_points,
@@ -117,7 +117,9 @@ if __name__ == "__main__":
         help="# samples, each contains num_point points_centered",
     )
     parser.add_argument("--ckpt", default="", help="Checkpoint file")
-    parser.add_argument("--set", default="validation", help="train, validation, test")
+    parser.add_argument("--set",
+                        default="validation",
+                        help="train, validation, test")
     flags = parser.parse_args()
     hyper_params = json.loads(open("semantic.json").read())
 
@@ -156,8 +158,7 @@ if __name__ == "__main__":
         # If flags.num_samples < batch_size, will predict one batch
         for batch_index in range(int(np.ceil(flags.num_samples / batch_size))):
             current_batch_size = min(
-                batch_size, flags.num_samples - batch_index * batch_size
-            )
+                batch_size, flags.num_samples - batch_index * batch_size)
 
             # Get data
             points_centered, points, gt_labels, colors = semantic_file_data.sample_batch(
@@ -168,17 +169,15 @@ if __name__ == "__main__":
             # (bs, 8192, 3) concat (bs, 8192, 3) -> (bs, 8192, 6)
             if hyper_params["use_color"]:
                 points_centered_with_colors = np.concatenate(
-                    (points_centered, colors), axis=-1
-                )
+                    (points_centered, colors), axis=-1)
             else:
                 points_centered_with_colors = points_centered
 
             # Predict
             s = time.time()
             pd_labels = predictor.predict(points_centered_with_colors)
-            print(
-                "Batch size: {}, time: {}".format(current_batch_size, time.time() - s)
-            )
+            print("Batch size: {}, time: {}".format(current_batch_size,
+                                                    time.time() - s))
 
             # Save to collector for file output
             points_collector.extend(points)
@@ -188,7 +187,8 @@ if __name__ == "__main__":
             cm.increment_from_list(gt_labels.flatten(), pd_labels.flatten())
 
         # Save sparse point cloud and predicted labels
-        file_prefix = os.path.basename(semantic_file_data.file_path_without_ext)
+        file_prefix = os.path.basename(
+            semantic_file_data.file_path_without_ext)
 
         sparse_points = np.array(points_collector).reshape((-1, 3))
         pcd = open3d.PointCloud()

@@ -5,14 +5,14 @@ from sklearn.metrics import confusion_matrix as skl_get_confusion_matrix
 
 
 class ConfusionMatrix:
+
     def __init__(self, num_classes):
         """
         label must be {0, 1, 2, ..., num_classes - 1}
         """
         self.num_classes = num_classes
-        self.confusion_matrix = np.zeros(
-            (self.num_classes, self.num_classes), dtype=np.int64
-        )
+        self.confusion_matrix = np.zeros((self.num_classes, self.num_classes),
+                                         dtype=np.int64)
         self.valid_labels = set(range(self.num_classes))
 
     def increment(self, gt_label, pd_label):
@@ -23,10 +23,12 @@ class ConfusionMatrix:
         self.confusion_matrix[gt_label][pd_label] += 1
 
     def increment_from_list(self, gt_labels, pd_labels):
-        increment_cm = skl_get_confusion_matrix(
-            gt_labels, pd_labels, labels=list(range(self.num_classes))
-        )
-        np.testing.assert_array_equal(self.confusion_matrix.shape, increment_cm.shape)
+        increment_cm = skl_get_confusion_matrix(gt_labels,
+                                                pd_labels,
+                                                labels=list(
+                                                    range(self.num_classes)))
+        np.testing.assert_array_equal(self.confusion_matrix.shape,
+                                      increment_cm.shape)
         self.confusion_matrix += increment_cm
 
     def get_per_class_ious(self):
@@ -47,18 +49,16 @@ class ConfusionMatrix:
 
         # Check that pd != 0
         if any(self.confusion_matrix[:, 0] != 0):
-            print("[Warn] Contains prediction of label 0:", self.confusion_matrix[:, 0])
+            print("[Warn] Contains prediction of label 0:",
+                  self.confusion_matrix[:, 0])
 
         # Ignore gt == 0
         valid_confusion_matrix = self.confusion_matrix[1:, 1:]
         ious = []
         for c in range(len(valid_confusion_matrix)):
             intersection = valid_confusion_matrix[c, c]
-            union = (
-                np.sum(valid_confusion_matrix[c, :])
-                + np.sum(valid_confusion_matrix[:, c])
-                - intersection
-            )
+            union = (np.sum(valid_confusion_matrix[c, :]) +
+                     np.sum(valid_confusion_matrix[:, c]) - intersection)
             if union == 0:
                 union = 1
             ious.append(float(intersection) / union)
@@ -80,7 +80,8 @@ class ConfusionMatrix:
              2. assert that pd != 0
         """
         valid_confusion_matrix = self.confusion_matrix[1:, 1:]
-        return np.trace(valid_confusion_matrix) / np.sum(valid_confusion_matrix)
+        return np.trace(valid_confusion_matrix) / np.sum(
+            valid_confusion_matrix)
 
     def print_metrics(self, labels=None):
         # 1. Confusion matrix
@@ -106,7 +107,8 @@ class ConfusionMatrix:
         for i, label in enumerate(labels):
             print("    %{0}s".format(column_width) % label, end=" ")
             for j in range(len(labels)):
-                cell = "%{0}.0f".format(column_width) % self.confusion_matrix[i, j]
+                cell = "%{0}.0f".format(column_width) % self.confusion_matrix[
+                    i, j]
                 print(cell, end=" ")
             print()
 
@@ -132,9 +134,8 @@ if __name__ == "__main__":
     # | 1 (gt) | (must be) 0 | 4           | 5           | 6           |
     # | 2 (gt) | (must be) 0 | 7           | 8           | 9           |
     # | 3 (gt) | (must be) 0 | 10          | 11          | 12          |
-    ref_confusion_matrix = np.array(
-        [[0, 1, 2, 3], [0, 4, 5, 6], [0, 7, 8, 9], [0, 10, 11, 12]]
-    )
+    ref_confusion_matrix = np.array([[0, 1, 2, 3], [0, 4, 5, 6], [0, 7, 8, 9],
+                                     [0, 10, 11, 12]])
 
     # Build CM
     cm = ConfusionMatrix(num_classes=4)
@@ -148,13 +149,11 @@ if __name__ == "__main__":
     print(cm.confusion_matrix)
 
     # Check IoU
-    ref_per_class_ious = np.array(
-        [
-            4.0 / (4 + 7 + 10 + 5 + 6),
-            8.0 / (5 + 8 + 11 + 7 + 9),
-            12.0 / (6 + 9 + 12 + 10 + 11),
-        ]
-    )
+    ref_per_class_ious = np.array([
+        4.0 / (4 + 7 + 10 + 5 + 6),
+        8.0 / (5 + 8 + 11 + 7 + 9),
+        12.0 / (6 + 9 + 12 + 10 + 11),
+    ])
     np.testing.assert_allclose(cm.get_per_class_ious(), ref_per_class_ious)
     print(cm.get_per_class_ious())
 

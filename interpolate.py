@@ -14,14 +14,14 @@ from tf_ops.tf_interpolate import interpolate_label_with_color
 
 
 class Interpolator:
+
     def __init__(self):
         pl_sparse_points = tf.placeholder(tf.float32, (None, 3))
-        pl_sparse_labels = tf.placeholder(tf.int32, (None,))
+        pl_sparse_labels = tf.placeholder(tf.int32, (None, ))
         pl_dense_points = tf.placeholder(tf.float32, (None, 3))
         pl_knn = tf.placeholder(tf.int32, ())
         dense_labels, dense_colors = interpolate_label_with_color(
-            pl_sparse_points, pl_sparse_labels, pl_dense_points, pl_knn
-        )
+            pl_sparse_points, pl_sparse_labels, pl_dense_points, pl_knn)
         self.ops = {
             "pl_sparse_points": pl_sparse_points,
             "pl_sparse_labels": pl_sparse_labels,
@@ -32,7 +32,11 @@ class Interpolator:
         }
         self.sess = tf.Session()
 
-    def interpolate_labels(self, sparse_points, sparse_labels, dense_points, knn=3):
+    def interpolate_labels(self,
+                           sparse_points,
+                           sparse_labels,
+                           dense_points,
+                           knn=3):
         return self.sess.run(
             [self.ops["dense_labels"], self.ops["dense_colors"]],
             feed_dict={
@@ -47,7 +51,9 @@ class Interpolator:
 if __name__ == "__main__":
     # Parser
     parser = argparse.ArgumentParser()
-    parser.add_argument("--set", default="validation", help="train, validation, test")
+    parser.add_argument("--set",
+                        default="validation",
+                        help="train, validation, test")
     flags = parser.parse_args()
 
     # Directories
@@ -72,9 +78,8 @@ if __name__ == "__main__":
         sparse_labels_path = os.path.join(sparse_dir, file_prefix + ".labels")
         dense_points_path = os.path.join(gt_dir, file_prefix + ".pcd")
         dense_labels_path = os.path.join(dense_dir, file_prefix + ".labels")
-        dense_points_colored_path = os.path.join(
-            dense_dir, file_prefix + "_colored.pcd"
-        )
+        dense_points_colored_path = os.path.join(dense_dir,
+                                                 file_prefix + "_colored.pcd")
         dense_gt_labels_path = os.path.join(gt_dir, file_prefix + ".labels")
 
         # Sparse points
@@ -94,7 +99,8 @@ if __name__ == "__main__":
 
         # Dense Ground-truth labels
         try:
-            dense_gt_labels = load_labels(os.path.join(gt_dir, file_prefix + ".labels"))
+            dense_gt_labels = load_labels(
+                os.path.join(gt_dir, file_prefix + ".labels"))
             print("dense_gt_labels loaded", flush=True)
         except:
             print("dense_gt_labels not found, treat as test set")
@@ -103,9 +109,11 @@ if __name__ == "__main__":
         # Assign labels
         start = time.time()
         dense_labels, dense_colors = interpolator.interpolate_labels(
-            sparse_points, sparse_labels, dense_points
-        )
-        print("KNN interpolation time: ", time.time() - start, "seconds", flush=True)
+            sparse_points, sparse_labels, dense_points)
+        print("KNN interpolation time: ",
+              time.time() - start,
+              "seconds",
+              flush=True)
 
         # Write dense labels
         write_labels(dense_labels_path, dense_labels)
@@ -114,7 +122,9 @@ if __name__ == "__main__":
         # Write dense point cloud with color
         dense_pcd.colors = open3d.Vector3dVector(dense_colors)
         open3d.write_point_cloud(dense_points_colored_path, dense_pcd)
-        print("Dense pcd with color written to:", dense_points_colored_path, flush=True)
+        print("Dense pcd with color written to:",
+              dense_points_colored_path,
+              flush=True)
 
         # Eval
         if dense_gt_labels is not None:

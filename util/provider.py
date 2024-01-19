@@ -1,7 +1,6 @@
 """ import os
 import sys """
 import numpy as np
-
 """ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR) """
 
@@ -51,21 +50,19 @@ def rotate_point_cloud(batch_data, rotation_axis="z"):
         cosval = np.cos(rotation_angle)
         sinval = np.sin(rotation_angle)
         if rotation_axis == "x":
-            rotation_matrix = np.array(
-                [[1, 0, 0], [0, cosval, sinval], [0, -sinval, cosval]]
-            )
+            rotation_matrix = np.array([[1, 0, 0], [0, cosval, sinval],
+                                        [0, -sinval, cosval]])
         elif rotation_axis == "y":
-            rotation_matrix = np.array(
-                [[cosval, 0, sinval], [0, 1, 0], [-sinval, 0, cosval]]
-            )
+            rotation_matrix = np.array([[cosval, 0, sinval], [0, 1, 0],
+                                        [-sinval, 0, cosval]])
         elif rotation_axis == "z":
-            rotation_matrix = np.array(
-                [[cosval, sinval, 0], [-sinval, cosval, 0], [0, 0, 1]]
-            )
+            rotation_matrix = np.array([[cosval, sinval, 0],
+                                        [-sinval, cosval, 0], [0, 0, 1]])
         else:
             raise ValueError("Wrong rotation axis")
         shape_pc = batch_data[k, ...]
-        rotated_data[k, ...] = np.dot(shape_pc.reshape((-1, 3)), rotation_matrix)
+        rotated_data[k, ...] = np.dot(shape_pc.reshape((-1, 3)),
+                                      rotation_matrix)
     return rotated_data
 
 
@@ -78,27 +75,26 @@ def rotate_feature_point_cloud(batch_data, feature_size=3, rotation_axis="z"):
           BxNx3 array, rotated batch of point clouds
     """
     rotated_data = np.zeros(batch_data.shape, dtype=np.float32)
-    rotated_data[:, :, 3 : 3 + feature_size] = batch_data[:, :, 3 : 3 + feature_size]
+    rotated_data[:, :, 3:3 + feature_size] = batch_data[:, :,
+                                                        3:3 + feature_size]
     for k in range(batch_data.shape[0]):
         rotation_angle = np.random.uniform() * 2 * np.pi
         cosval = np.cos(rotation_angle)
         sinval = np.sin(rotation_angle)
         if rotation_axis == "x":
-            rotation_matrix = np.array(
-                [[1, 0, 0], [0, cosval, sinval], [0, -sinval, cosval]]
-            )
+            rotation_matrix = np.array([[1, 0, 0], [0, cosval, sinval],
+                                        [0, -sinval, cosval]])
         elif rotation_axis == "y":
-            rotation_matrix = np.array(
-                [[cosval, 0, sinval], [0, 1, 0], [-sinval, 0, cosval]]
-            )
+            rotation_matrix = np.array([[cosval, 0, sinval], [0, 1, 0],
+                                        [-sinval, 0, cosval]])
         elif rotation_axis == "z":
-            rotation_matrix = np.array(
-                [[cosval, sinval, 0], [-sinval, cosval, 0], [0, 0, 1]]
-            )
+            rotation_matrix = np.array([[cosval, sinval, 0],
+                                        [-sinval, cosval, 0], [0, 0, 1]])
         else:
             raise ValueError("Wrong rotation axis")
         shape_pc = batch_data[k, :, 0:3]
-        rotated_data[k, :, 0:3] = np.dot(shape_pc.reshape((-1, 3)), rotation_matrix)
+        rotated_data[k, :, 0:3] = np.dot(shape_pc.reshape((-1, 3)),
+                                         rotation_matrix)
     return rotated_data
 
 
@@ -113,21 +109,20 @@ def rotate_point_cloud_with_normal(batch_xyz_normal):
         rotation_angle = np.random.uniform() * 2 * np.pi
         cosval = np.cos(rotation_angle)
         sinval = np.sin(rotation_angle)
-        rotation_matrix = np.array(
-            [[cosval, 0, sinval], [0, 1, 0], [-sinval, 0, cosval]]
-        )
+        rotation_matrix = np.array([[cosval, 0, sinval], [0, 1, 0],
+                                    [-sinval, 0, cosval]])
         shape_pc = batch_xyz_normal[k, :, 0:3]
         shape_normal = batch_xyz_normal[k, :, 3:6]
-        batch_xyz_normal[k, :, 0:3] = np.dot(shape_pc.reshape((-1, 3)), rotation_matrix)
-        batch_xyz_normal[k, :, 3:6] = np.dot(
-            shape_normal.reshape((-1, 3)), rotation_matrix
-        )
+        batch_xyz_normal[k, :, 0:3] = np.dot(shape_pc.reshape((-1, 3)),
+                                             rotation_matrix)
+        batch_xyz_normal[k, :, 3:6] = np.dot(shape_normal.reshape((-1, 3)),
+                                             rotation_matrix)
     return batch_xyz_normal
 
 
-def rotate_perturbation_point_cloud_with_normal(
-    batch_data, angle_sigma=0.06, angle_clip=0.18
-):
+def rotate_perturbation_point_cloud_with_normal(batch_data,
+                                                angle_sigma=0.06,
+                                                angle_clip=0.18):
     """ Randomly perturb the point clouds by small rotations
         Input:
           BxNx6 array, original batch of point clouds and point normals
@@ -136,28 +131,23 @@ def rotate_perturbation_point_cloud_with_normal(
     """
     rotated_data = np.zeros(batch_data.shape, dtype=np.float32)
     for k in range(batch_data.shape[0]):
-        angles = np.clip(angle_sigma * np.random.randn(3), -angle_clip, angle_clip)
-        Rx = np.array(
-            [
-                [1, 0, 0],
-                [0, np.cos(angles[0]), -np.sin(angles[0])],
-                [0, np.sin(angles[0]), np.cos(angles[0])],
-            ]
-        )
-        Ry = np.array(
-            [
-                [np.cos(angles[1]), 0, np.sin(angles[1])],
-                [0, 1, 0],
-                [-np.sin(angles[1]), 0, np.cos(angles[1])],
-            ]
-        )
-        Rz = np.array(
-            [
-                [np.cos(angles[2]), -np.sin(angles[2]), 0],
-                [np.sin(angles[2]), np.cos(angles[2]), 0],
-                [0, 0, 1],
-            ]
-        )
+        angles = np.clip(angle_sigma * np.random.randn(3), -angle_clip,
+                         angle_clip)
+        Rx = np.array([
+            [1, 0, 0],
+            [0, np.cos(angles[0]), -np.sin(angles[0])],
+            [0, np.sin(angles[0]), np.cos(angles[0])],
+        ])
+        Ry = np.array([
+            [np.cos(angles[1]), 0, np.sin(angles[1])],
+            [0, 1, 0],
+            [-np.sin(angles[1]), 0, np.cos(angles[1])],
+        ])
+        Rz = np.array([
+            [np.cos(angles[2]), -np.sin(angles[2]), 0],
+            [np.sin(angles[2]), np.cos(angles[2]), 0],
+            [0, 0, 1],
+        ])
         R = np.dot(Rz, np.dot(Ry, Rx))
         shape_pc = batch_data[k, :, 0:3]
         shape_normal = batch_data[k, :, 3:6]
@@ -178,11 +168,11 @@ def rotate_point_cloud_by_angle(batch_data, rotation_angle):
         # rotation_angle = np.random.uniform() * 2 * np.pi
         cosval = np.cos(rotation_angle)
         sinval = np.sin(rotation_angle)
-        rotation_matrix = np.array(
-            [[cosval, 0, sinval], [0, 1, 0], [-sinval, 0, cosval]]
-        )
+        rotation_matrix = np.array([[cosval, 0, sinval], [0, 1, 0],
+                                    [-sinval, 0, cosval]])
         shape_pc = batch_data[k, :, 0:3]
-        rotated_data[k, :, 0:3] = np.dot(shape_pc.reshape((-1, 3)), rotation_matrix)
+        rotated_data[k, :, 0:3] = np.dot(shape_pc.reshape((-1, 3)),
+                                         rotation_matrix)
     return rotated_data
 
 
@@ -198,17 +188,20 @@ def rotate_point_cloud_by_angle_with_normal(batch_data, rotation_angle):
         # rotation_angle = np.random.uniform() * 2 * np.pi
         cosval = np.cos(rotation_angle)
         sinval = np.sin(rotation_angle)
-        rotation_matrix = np.array(
-            [[cosval, 0, sinval], [0, 1, 0], [-sinval, 0, cosval]]
-        )
+        rotation_matrix = np.array([[cosval, 0, sinval], [0, 1, 0],
+                                    [-sinval, 0, cosval]])
         shape_pc = batch_data[k, ...]
         shape_normal = batch_data[k, :, 3:6]
-        rotated_data[k, ...] = np.dot(shape_pc.reshape((-1, 3)), rotation_matrix)
-        rotated_data[k, :, 3:6] = np.dot(shape_normal.reshape((-1, 3)), rotation_matrix)
+        rotated_data[k, ...] = np.dot(shape_pc.reshape((-1, 3)),
+                                      rotation_matrix)
+        rotated_data[k, :, 3:6] = np.dot(shape_normal.reshape((-1, 3)),
+                                         rotation_matrix)
     return rotated_data
 
 
-def rotate_perturbation_point_cloud(batch_data, angle_sigma=0.06, angle_clip=0.18):
+def rotate_perturbation_point_cloud(batch_data,
+                                    angle_sigma=0.06,
+                                    angle_clip=0.18):
     """ Randomly perturb the point clouds by small rotations
         Input:
           BxNx3 array, original batch of point clouds
@@ -217,28 +210,23 @@ def rotate_perturbation_point_cloud(batch_data, angle_sigma=0.06, angle_clip=0.1
     """
     rotated_data = np.zeros(batch_data.shape, dtype=np.float32)
     for k in range(batch_data.shape[0]):
-        angles = np.clip(angle_sigma * np.random.randn(3), -angle_clip, angle_clip)
-        Rx = np.array(
-            [
-                [1, 0, 0],
-                [0, np.cos(angles[0]), -np.sin(angles[0])],
-                [0, np.sin(angles[0]), np.cos(angles[0])],
-            ]
-        )
-        Ry = np.array(
-            [
-                [np.cos(angles[1]), 0, np.sin(angles[1])],
-                [0, 1, 0],
-                [-np.sin(angles[1]), 0, np.cos(angles[1])],
-            ]
-        )
-        Rz = np.array(
-            [
-                [np.cos(angles[2]), -np.sin(angles[2]), 0],
-                [np.sin(angles[2]), np.cos(angles[2]), 0],
-                [0, 0, 1],
-            ]
-        )
+        angles = np.clip(angle_sigma * np.random.randn(3), -angle_clip,
+                         angle_clip)
+        Rx = np.array([
+            [1, 0, 0],
+            [0, np.cos(angles[0]), -np.sin(angles[0])],
+            [0, np.sin(angles[0]), np.cos(angles[0])],
+        ])
+        Ry = np.array([
+            [np.cos(angles[1]), 0, np.sin(angles[1])],
+            [0, 1, 0],
+            [-np.sin(angles[1]), 0, np.cos(angles[1])],
+        ])
+        Rz = np.array([
+            [np.cos(angles[2]), -np.sin(angles[2]), 0],
+            [np.sin(angles[2]), np.cos(angles[2]), 0],
+            [0, 0, 1],
+        ])
         R = np.dot(Rz, np.dot(Ry, Rx))
         shape_pc = batch_data[k, ...]
         rotated_data[k, ...] = np.dot(shape_pc.reshape((-1, 3)), R)
@@ -291,9 +279,11 @@ def random_point_dropout(batch_pc, max_dropout_ratio=0.875):
     """ batch_pc: BxNx3 """
     for b in range(batch_pc.shape[0]):
         dropout_ratio = np.random.random() * max_dropout_ratio  # 0~0.875
-        drop_idx = np.where(np.random.random((batch_pc.shape[1])) <= dropout_ratio)[0]
+        drop_idx = np.where(
+            np.random.random((batch_pc.shape[1])) <= dropout_ratio)[0]
         if len(drop_idx) > 0:
-            batch_pc[b, drop_idx, :] = batch_pc[b, 0, :]  # set to the first point
+            batch_pc[b, drop_idx, :] = batch_pc[b,
+                                                0, :]  # set to the first point
     return batch_pc
 
 
